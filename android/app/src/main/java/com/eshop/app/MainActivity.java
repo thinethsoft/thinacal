@@ -25,10 +25,18 @@ public class MainActivity extends BridgeActivity {
                         super.onPageFinished(view, url);
                         String js = "(function() {" +
                             "try {" +
+                            "  var getAppToken = function() {" +
+                            "    var t = localStorage.getItem('app_fcm_token');" +
+                            "    if (!t) {" +
+                            "      t = 'cap_fcm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);" +
+                            "      localStorage.setItem('app_fcm_token', t);" +
+                            "    }" +
+                            "    return t;" +
+                            "  };" +
                             "  if (!('PushManager' in window)) {" +
                             "    window.PushManager = function() {};" +
                             "    window.PushManager.prototype.subscribe = function() {" +
-                            "      var token = 'cap_fcm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);" +
+                            "      var token = getAppToken();" +
                             "      var sub = {" +
                             "        endpoint: 'https://fcm.googleapis.com/fcm/send/' + token," +
                             "        subscriptionId: token," +
