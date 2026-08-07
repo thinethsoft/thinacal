@@ -19,10 +19,6 @@ public class MainActivity extends BridgeActivity {
             if (webView != null) {
                 webView.getSettings().setJavaScriptEnabled(true);
                 webView.getSettings().setDomStorageEnabled(true);
-                String currentUa = webView.getSettings().getUserAgentString();
-                if (currentUa != null && !currentUa.contains("AndroidApp")) {
-                    webView.getSettings().setUserAgentString(currentUa + " AndroidApp Capacitor");
-                }
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
                     public void onPageFinished(WebView view, String url) {
