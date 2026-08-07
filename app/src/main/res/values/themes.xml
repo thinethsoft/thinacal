@@ -1,0 +1,17 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!-- Dark Immersive NoActionBar Theme -->
+    <style name="Theme.SlaTaskNotifier" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <!-- Primary brand color -->
+        <item name="colorPrimary">@color/bg_dark</item>
+        <item name="colorPrimaryVariant">@color/bg_dark</item>
+        <item name="colorOnPrimary">@color/text_white</item>
+        <!-- Secondary brand color -->
+        <item name="colorSecondary">@color/accent_indigo</item>
+        <item name="colorSecondaryVariant">@color/accent_violet</item>
+        <item name="colorOnSecondary">@color/text_white</item>
+        <!-- Background -->
+        <item name="android:windowBackground">@color/bg_dark</item>
+        <!-- Status bar color -->
+        <item name="android:statusBarColor">@color/bg_dark</item>
+    </style>
+</resources>

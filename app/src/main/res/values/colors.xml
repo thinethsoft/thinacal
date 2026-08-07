@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark Luxury Palette -->
+    <color name="bg_dark">#0F172A</color>
+    <color name="bg_card_dark">#1E293B</color>
+    <color name="bg_card_stroke">#334155</color>
+    
+    <!-- Primary Gradients & Accents -->
+    <color name="accent_indigo">#6366F1</color>
+    <color name="accent_violet">#8B5CF6</color>
+    <color name="accent_cyan">#06B6D4</color>
+    
+    <!-- SLA Urgent Colors -->
+    <color name="sla_crimson">#EF4444</color>
+    <color name="sla_crimson_dark">#991B1B</color>
+    
+    <!-- Text Colors -->
+    <color name="text_white">#F8FAFC</color>
+    <color name="text_muted">#94A3B8</color>
+    <color name="text_subtle">#64748B</color>
+    
+    <!-- Legacy compatibility -->
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+    <color name="primary_dark">#0F172A</color>
+</resources>

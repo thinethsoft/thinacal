@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">E Shop</string>
+    <string name="configure_url">Configure System URL</string>
+    <string name="save_url">Save URL</string>
+    <string name="cancel">Cancel</string>
+    <string name="enter_url_hint">e.g. https://system.mycompany.com</string>
+    <string name="invalid_url">Please enter a valid HTTP or HTTPS URL.</string>
+    <string name="menu_settings">URL Settings</string>
+    <string name="menu_refresh">Refresh Page</string>
+    <string name="acknowledge_task">Acknowledge Task</string>
+</resources>
