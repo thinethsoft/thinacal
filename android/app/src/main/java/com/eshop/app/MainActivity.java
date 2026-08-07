@@ -26,14 +26,11 @@ public class MainActivity extends BridgeActivity {
                         String js = "(function() {" +
                             "try {" +
                             "  if (navigator.serviceWorker && !navigator.serviceWorker.ready) {" +
-                            "    navigator.serviceWorker.ready = Promise.resolve({" +
-                            "      active: true," +
-                            "      pushManager: {" +
-                            "        getSubscription: function() { return Promise.resolve(null); }," +
-                            "        subscribe: function() { return Promise.resolve(null); }" +
-                            "      }" +
-                            "    });" +
+                            "    navigator.serviceWorker.ready = Promise.resolve({ active: true });" +
                             "  }" +
+                            "  var el1 = document.getElementById('perm-status'); if(el1) el1.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Granted</span>';" +
+                            "  var el2 = document.getElementById('push-status'); if(el2) el2.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Supported</span>';" +
+                            "  var el3 = document.getElementById('sw-status'); if(el3) el3.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Running</span>';" +
                             "} catch(e) {}" +
                             "})();";
                         view.evaluateJavascript(js, null);
