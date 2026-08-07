@@ -419,26 +419,45 @@
         }
 
         function setupNativePush() {
-            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
-                const push = window.Capacitor.Plugins.PushNotifications;
-                push.checkPermissions().then(perm => {
-                    if (perm.receive !== 'granted') {
-                        push.requestPermissions();
-                    }
-                    push.register();
-                });
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+                    const push = window.Capacitor.Plugins.PushNotifications;
 
-                push.addListener('registration', (token) => {
-                    currentFcmToken = token.value;
-                    document.getElementById('fcmTokenDisplay').innerText = `FCM Token:\n${token.value}`;
-                    document.getElementById('pushStatusPill').innerText = 'Connected';
-                });
+                    push.addListener('registration', (token) => {
+                        currentFcmToken = token.value;
+                        const tokenEl = document.getElementById('fcmTokenDisplay');
+                        if (tokenEl) tokenEl.innerText = `FCM Token:\n${token.value}`;
+                        const pillEl = document.getElementById('pushStatusPill');
+                        if (pillEl) pillEl.innerText = 'Connected';
+                    });
 
-                push.addListener('registrationError', (err) => {
-                    document.getElementById('fcmTokenDisplay').innerText = `Push Error: ${JSON.stringify(err)}`;
-                });
-            } else {
-                document.getElementById('fcmTokenDisplay').innerText = 'Running in Web Browser mode (Native Capacitor Bridge unavailable)';
+                    push.addListener('registrationError', (err) => {
+                        console.warn('Push registration error:', err);
+                        const tokenEl = document.getElementById('fcmTokenDisplay');
+                        if (tokenEl) tokenEl.innerText = `Push Warning: google-services.json missing or FCM error`;
+                        const pillEl = document.getElementById('pushStatusPill');
+                        if (pillEl) pillEl.innerText = 'FCM Disconnected';
+                    });
+
+                    push.checkPermissions().then(perm => {
+                        if (perm.receive !== 'granted') {
+                            push.requestPermissions().then(req => {
+                                if (req.receive === 'granted') {
+                                    push.register().catch(e => console.warn('Register catch:', e));
+                                }
+                            }).catch(e => console.warn('Request perm catch:', e));
+                        } else {
+                            push.register().catch(e => console.warn('Register catch:', e));
+                        }
+                    }).catch(err => {
+                        console.warn('Check perm catch:', err);
+                    });
+                } else {
+                    const tokenEl = document.getElementById('fcmTokenDisplay');
+                    if (tokenEl) tokenEl.innerText = 'Running in Web Browser mode (Native Capacitor Bridge unavailable)';
+                }
+            } catch (err) {
+                console.error('setupNativePush unexpected error:', err);
             }
         }
 
