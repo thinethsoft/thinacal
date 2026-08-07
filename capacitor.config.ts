@@ -2,10 +2,11 @@ import { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.eshop.app',
-  appName: 'E-Shop',
+  appName: 'E Shop',
   webDir: 'www',
   bundledWebRuntime: false,
   server: {
+    url: 'https://admin-14.hoteleshopdemo.com/',
     allowNavigation: [
       "*"
     ],

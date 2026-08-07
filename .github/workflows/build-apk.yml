@@ -25,15 +25,18 @@ jobs:
 
       - name: Configure local.properties & gradlew permissions
         run: |
+          cd android
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           sed -i 's/\r$//' gradlew || true
           chmod +x gradlew || true
 
       - name: Build Debug APK
-        run: ./gradlew assembleDebug --stacktrace --no-daemon
+        run: |
+          cd android
+          ./gradlew assembleDebug --stacktrace --no-daemon
 
       - name: Upload Debug APK Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Thinacal-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: E-Shop-Capacitor-APK
+          path: android/app/build/outputs/apk/debug/app-debug.apk
