@@ -25,29 +25,15 @@ public class MainActivity extends BridgeActivity {
                         super.onPageFinished(view, url);
                         String js = "(function() {" +
                             "try {" +
-                            "  if(!('PushManager' in window)) {" +
-                            "    window.PushManager = function() {};" +
-                            "    window.PushManager.prototype.subscribe = function() {" +
-                            "      var ep = 'https://fcm.googleapis.com/fcm/send/cap_' + Date.now();" +
-                            "      return Promise.resolve({" +
-                            "        endpoint: ep," +
-                            "        subscriptionId: 'cap_' + Date.now()," +
-                            "        token: 'cap_' + Date.now()," +
-                            "        expirationTime: null," +
-                            "        keys: { p256dh: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-gZ0g_R_N096a6g_8Xg2g_R_N096a6g_8Xg2g', auth: 'dGhpbmFjYWxfYXV0aF8xMjM0NTY' }," +
-                            "        p256dh: 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-gZ0g_R_N096a6g_8Xg2g_R_N096a6g_8Xg2g'," +
-                            "        auth: 'dGhpbmFjYWxfYXV0aF8xMjM0NTY'," +
-                            "        getKey: function(n) { return null; }," +
-                            "        unsubscribe: function() { return Promise.resolve(true); }," +
-                            "        toJSON: function() { return { endpoint: ep, keys: this.keys }; }" +
-                            "      });" +
-                            "    };" +
-                            "    window.PushManager.prototype.getSubscription = function() { return this.subscribe(); };" +
-                            "    window.PushManager.prototype.permissionState = function() { return Promise.resolve('granted'); };" +
+                            "  if (navigator.serviceWorker && !navigator.serviceWorker.ready) {" +
+                            "    navigator.serviceWorker.ready = Promise.resolve({" +
+                            "      active: true," +
+                            "      pushManager: {" +
+                            "        getSubscription: function() { return Promise.resolve(null); }," +
+                            "        subscribe: function() { return Promise.resolve(null); }" +
+                            "      }" +
+                            "    });" +
                             "  }" +
-                            "  if(!window.Notification) window.Notification = function() {};" +
-                            "  window.Notification.permission = 'granted';" +
-                            "  window.Notification.requestPermission = function(cb) { if(cb) cb('granted'); return Promise.resolve('granted'); };" +
                             "} catch(e) {}" +
                             "})();";
                         view.evaluateJavascript(js, null);
