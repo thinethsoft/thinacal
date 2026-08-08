@@ -60,6 +60,16 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private val requestRecordAudioPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            Log.d("MainActivity", "RECORD_AUDIO permission granted")
+        } else {
+            Toast.makeText(this, "Microphone permission is required for Voice Calls", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -74,6 +84,7 @@ class MainActivity : AppCompatActivity() {
 
         NotificationHelper.createNotificationChannel(this)
         requestNotificationPermission()
+        requestRecordAudioPermission()
         requestBatteryOptimizationExemption()
 
         setupWebView()
@@ -87,7 +98,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         fabCall.setOnClickListener {
-            webView.evaluateJavascript("if(window.openVoiceCallSelector) window.openVoiceCallSelector(); else if(window.WebRTCCallManager) window.WebRTCCallManager.showIncomingCallPrompt('');", null)
+            val savedBase = UrlSettingsActivity.getSavedUrl(this) ?: ""
+            if (!savedBase.isNullOrBlank()) {
+                val base = if (savedBase.endsWith("/")) savedBase.substring(0, savedBase.lastIndexOf('/') + 1) else "$savedBase/"
+                loadWebUrl(base + "call_center.php")
+            } else {
+                webView.evaluateJavascript("if(window.openVoiceCallSelector) window.openVoiceCallSelector();", null)
+            }
         }
 
         swipeRefreshLayout.setOnRefreshListener {
@@ -210,6 +227,18 @@ class MainActivity : AppCompatActivity() {
         val jsPolyfill = """
             (function() {
                 try {
+                    if (!window.WebRTCCallManager) {
+                        var scriptTag = document.createElement('script');
+                        scriptTag.src = 'js/webrtc_call.js?v=' + Date.now();
+                        document.head.appendChild(scriptTag);
+                    }
+                    if (!document.getElementById('voiceCallModal') && window.jQuery) {
+                        $.get('includes/call_modal.php', function(html) {
+                            if (!document.getElementById('voiceCallModal')) {
+                                $('body').append(html);
+                            }
+                        });
+                    }
                     if (window.Notification) {
                         window.Notification.permission = 'granted';
                         window.Notification.requestPermission = function(callback) {
@@ -353,6 +382,16 @@ class MainActivity : AppCompatActivity() {
             ) {
                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
+        }
+    }
+
+    private fun requestRecordAudioPermission() {
+        if (ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.RECORD_AUDIO
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            requestRecordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
         }
     }
 
