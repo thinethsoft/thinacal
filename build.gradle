@@ -11,5 +11,5 @@ buildscript {
 }
 
 tasks.register('clean', Delete) {
-    delete rootProject.layout.buildDirectory
+    delete rootProject.buildDir
 }
