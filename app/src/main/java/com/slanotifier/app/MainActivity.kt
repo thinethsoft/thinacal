@@ -32,6 +32,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var unconfiguredLayout: LinearLayout
     private lateinit var btnSetupUrl: Button
     private lateinit var fabSettings: com.google.android.material.floatingactionbutton.FloatingActionButton
+    private lateinit var fabCall: com.google.android.material.floatingactionbutton.FloatingActionButton
 
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -69,6 +70,7 @@ class MainActivity : AppCompatActivity() {
         unconfiguredLayout = findViewById(R.id.unconfiguredLayout)
         btnSetupUrl = findViewById(R.id.btnSetupUrl)
         fabSettings = findViewById(R.id.fabSettings)
+        fabCall = findViewById(R.id.fabCall)
 
         NotificationHelper.createNotificationChannel(this)
         requestNotificationPermission()
@@ -82,6 +84,10 @@ class MainActivity : AppCompatActivity() {
 
         fabSettings.setOnClickListener {
             openUrlSettings()
+        }
+
+        fabCall.setOnClickListener {
+            webView.evaluateJavascript("if(window.openVoiceCallSelector) window.openVoiceCallSelector(); else if(window.WebRTCCallManager) window.WebRTCCallManager.showIncomingCallPrompt('');", null)
         }
 
         swipeRefreshLayout.setOnRefreshListener {
