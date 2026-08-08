@@ -3,6 +3,7 @@ package com.slanotifier.app
 import android.content.Context
 import android.webkit.JavascriptInterface
 import android.widget.Toast
+import com.google.firebase.messaging.FirebaseMessaging
 
 class WebAppInterface(private val context: Context) {
 
@@ -21,11 +22,20 @@ class WebAppInterface(private val context: Context) {
     @JavascriptInterface
     fun getPersistentFcmToken(): String {
         var token = prefs.getString("fcm_token", null)
-        if (token.isNullOrBlank()) {
-            token = "cap_fcm_app_" + System.currentTimeMillis() + "_" + (1000..9999).random()
-            prefs.edit().putString("fcm_token", token).apply()
+        if (token.isNullOrBlank() || token.startsWith("cap_fcm_")) {
+            try {
+                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful && !task.result.isNullOrBlank()) {
+                        val realToken = task.result
+                        prefs.edit().putString("fcm_token", realToken).apply()
+                    }
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            token = prefs.getString("fcm_token", null) ?: "fetching_real_fcm_token..."
         }
-        return token!!
+        return token
     }
 
     @JavascriptInterface
