@@ -1,122 +1,11 @@
 package com.eshop.app;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Toast;
 import com.getcapacitor.BridgeActivity;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends BridgeActivity {
-    private static final String PREFS_NAME = "eshop_native_prefs";
-    private static final String KEY_FCM_TOKEN = "native_fcm_token";
-    private static final String KEY_DEVICE_UUID = "native_device_uuid";
-
-    private String getOrGenerateDeviceUuid() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String uuid = prefs.getString(KEY_DEVICE_UUID, null);
-        if (uuid == null || uuid.trim().isEmpty()) {
-            uuid = "dev_native_" + System.currentTimeMillis() + "_" + Math.abs(new java.util.Random().nextLong());
-            prefs.edit().putString(KEY_DEVICE_UUID, uuid).apply();
-        }
-        return uuid;
-    }
-
-    private String getOrGenerateFcmToken() {
-        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        String token = prefs.getString(KEY_FCM_TOKEN, null);
-        if (token == null || token.trim().isEmpty()) {
-            token = "cap_fcm_os_" + System.currentTimeMillis() + "_" + Math.abs(new java.util.Random().nextLong());
-            prefs.edit().putString(KEY_FCM_TOKEN, token).apply();
-        }
-        return token;
-    }
-
-    public class NativeAppBridge {
-        @JavascriptInterface
-        public void registerNativeDevice() {
-            new Thread(() -> {
-                try {
-                    String uuid = getOrGenerateDeviceUuid();
-                    String token = getOrGenerateFcmToken();
-                    String baseUrl = "https://admin-14.hoteleshopdemo.com/";
-
-                    URL url = new URL(baseUrl + "entity/device_registration_action.php");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/json");
-                    conn.setDoOutput(true);
-
-                    String jsonInputString = String.format(
-                        "{\"device_uuid\":\"%s\",\"fcm_token\":\"%s\",\"device_info\":\"E Shop Native Android App\",\"platform\":\"Android OS Native\"}",
-                        uuid, token
-                    );
-
-                    try (OutputStream os = conn.getOutputStream()) {
-                        byte[] input = jsonInputString.getBytes(StandardCharsets.UTF_8);
-                        os.write(input, 0, input.length);
-                    }
-
-                    int code = conn.getResponseCode();
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        if (code == 200) {
-                            Toast.makeText(MainActivity.this, "✅ FCM Device Registered in Database!", Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(MainActivity.this, "⚠️ Registration response code: " + code, Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } catch (Exception e) {
-                    new Handler(Looper.getMainLooper()).post(() -> 
-                        Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show()
-                    );
-                }
-            }).start();
-        }
-
-        @JavascriptInterface
-        public void triggerTestNotification() {
-            new Thread(() -> {
-                try {
-                    String uuid = getOrGenerateDeviceUuid();
-                    String baseUrl = "https://admin-14.hoteleshopdemo.com/";
-
-                    URL url = new URL(baseUrl + "entity/my_notifications_action.php");
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
-                    conn.setDoOutput(true);
-
-                    String postData = "action=test_notification&device_uuid=" + uuid;
-                    try (OutputStream os = conn.getOutputStream()) {
-                        byte[] input = postData.getBytes(StandardCharsets.UTF_8);
-                        os.write(input, 0, input.length);
-                    }
-
-                    int code = conn.getResponseCode();
-                    new Handler(Looper.getMainLooper()).post(() -> {
-                        if (code == 200) {
-                            Toast.makeText(MainActivity.this, "🔔 Test Notification Dispatched to Device!", Toast.LENGTH_LONG).show();
-                        } else {
-                            Toast.makeText(MainActivity.this, "⚠️ Test response code: " + code, Toast.LENGTH_LONG).show();
-                        }
-                    });
-                } catch (Exception e) {
-                    new Handler(Looper.getMainLooper()).post(() -> 
-                        Toast.makeText(MainActivity.this, "Error: " + e.getMessage(), Toast.LENGTH_LONG).show()
-                    );
-                }
-            }).start();
-        }
-    }
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -126,14 +15,10 @@ public class MainActivity extends BridgeActivity {
     public void onStart() {
         super.onStart();
         try {
-            final String persistentToken = getOrGenerateFcmToken();
-            final String persistentUuid = getOrGenerateDeviceUuid();
-
             WebView webView = this.getBridge().getWebView();
             if (webView != null) {
                 webView.getSettings().setJavaScriptEnabled(true);
                 webView.getSettings().setDomStorageEnabled(true);
-                webView.addJavascriptInterface(new NativeAppBridge(), "NativeApp");
 
                 webView.setWebViewClient(new WebViewClient() {
                     @Override
@@ -141,8 +26,45 @@ public class MainActivity extends BridgeActivity {
                         super.onPageFinished(view, url);
                         String js = "(function() {" +
                             "try {" +
-                            "  localStorage.setItem('device_uuid', '" + persistentUuid + "');" +
-                            "  localStorage.setItem('app_fcm_token', '" + persistentToken + "');" +
+                            "  var uuid = localStorage.getItem('device_uuid');" +
+                            "  if (!uuid) {" +
+                            "    uuid = 'dev_native_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);" +
+                            "    localStorage.setItem('device_uuid', uuid);" +
+                            "  }" +
+                            "  var token = localStorage.getItem('app_fcm_token');" +
+                            "  if (!token) {" +
+                            "    token = 'cap_fcm_os_' + Date.now() + '_' + Math.random().toString(36).substring(2, 10);" +
+                            "    localStorage.setItem('app_fcm_token', token);" +
+                            "  }" +
+                            "  if (!window.NativeApp) window.NativeApp = {};" +
+                            "  window.NativeApp.registerNativeDevice = function() {" +
+                            "    if (window.jQuery) {" +
+                            "      $.ajax({" +
+                            "        url: 'entity/device_registration_action.php'," +
+                            "        type: 'POST'," +
+                            "        contentType: 'application/json'," +
+                            "        data: JSON.stringify({ device_uuid: uuid, fcm_token: token, device_info: 'E Shop Native Android App', platform: 'Android OS Native' })," +
+                            "        success: function(res) {" +
+                            "          if (window.Swal) Swal.fire({ icon: 'success', title: 'Device Registered!', text: 'Device FCM token saved in database.' });" +
+                            "          else alert('Device Registered Successfully!');" +
+                            "        }," +
+                            "        error: function() { alert('Registration failed. Please check login.'); }" +
+                            "      });" +
+                            "    }" +
+                            "  };" +
+                            "  window.NativeApp.triggerTestNotification = function() {" +
+                            "    if (window.jQuery) {" +
+                            "      $.post('entity/my_notifications_action.php', { action: 'test_notification', device_uuid: uuid }, function(res) {" +
+                            "        if (res.status === 'success') {" +
+                            "          if (window.Swal) Swal.fire({ icon: 'success', title: 'Test Dispatched!', text: res.message });" +
+                            "          else alert(res.message);" +
+                            "        } else {" +
+                            "          if (window.Swal) Swal.fire({ icon: 'error', title: 'Test Failed', text: res.message });" +
+                            "          else alert(res.message);" +
+                            "        }" +
+                            "      }, 'json');" +
+                            "    }" +
+                            "  };" +
                             "  if (!document.getElementById('native-control-bar')) {" +
                             "    var bar = document.createElement('div');" +
                             "    bar.id = 'native-control-bar';" +
