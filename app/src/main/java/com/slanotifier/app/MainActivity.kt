@@ -120,7 +120,19 @@ class MainActivity : AppCompatActivity() {
         if (intent == null) return
         val taskId = intent.getStringExtra("EXTRA_TASK_ID")
         val action = intent.getStringExtra("EXTRA_ACTION")
-        if (!taskId.isNullOrBlank() && action == "ACKNOWLEDGE") {
+        val targetUrl = intent.getStringExtra("TARGET_URL")
+
+        if (action == "ANSWER_CALL" || !targetUrl.isNullOrBlank()) {
+            NotificationHelper.stopContinuousRingtone()
+            if (!targetUrl.isNullOrBlank()) {
+                val fullUrl = if (targetUrl.startsWith("http")) targetUrl else {
+                    val savedBase = UrlSettingsActivity.getSavedUrl(this) ?: ""
+                    val base = if (savedBase.endsWith("/")) savedBase.substring(0, savedBase.lastIndexOf('/') + 1) else "$savedBase/"
+                    base + targetUrl
+                }
+                loadWebUrl(fullUrl)
+            }
+        } else if (!taskId.isNullOrBlank() && action == "ACKNOWLEDGE") {
             TaskManager.acknowledgeTask(this, taskId)
             Toast.makeText(this, "SLA Task Acknowledged: $taskId", Toast.LENGTH_SHORT).show()
         }
@@ -265,20 +277,6 @@ class MainActivity : AppCompatActivity() {
                             }, 'json');
                         }
                     };
-
-                    if (!document.getElementById('app-native-bar')) {
-                        var bar = document.createElement('div');
-                        bar.id = 'app-native-bar';
-                        bar.style.position = 'fixed';
-                        bar.style.bottom = '15px';
-                        bar.style.right = '15px';
-                        bar.style.zIndex = '999999';
-                        bar.style.display = 'flex';
-                        bar.style.gap = '8px';
-                        bar.innerHTML = '<button onclick=\"window.registerDeviceInDatabase()\" style=\"background:#2563eb;color:#fff;border:none;padding:10px 14px;border-radius:20px;font-size:12px;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,0.3);cursor:pointer;\">📱 Save Device</button>' +
-                                        '<button onclick=\"window.sendTestNotificationFromApp()\" style=\"background:#16a34a;color:#fff;border:none;padding:10px 14px;border-radius:20px;font-size:12px;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,0.3);cursor:pointer;\">🔔 Send Test</button>';
-                        document.body.appendChild(bar);
-                    }
 
                     var el1 = document.getElementById('perm-status'); if(el1) el1.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Granted</span>';
                     var el2 = document.getElementById('push-status'); if(el2) el2.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Supported</span>';

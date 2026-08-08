@@ -102,7 +102,8 @@ object NotificationHelper {
         taskId: String,
         title: String,
         message: String,
-        isAlarm: Boolean = false
+        isAlarm: Boolean = false,
+        targetUrl: String = ""
     ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(context)
@@ -120,7 +121,10 @@ object NotificationHelper {
         val intent = Intent(context, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             putExtra("EXTRA_TASK_ID", taskId)
-            putExtra("EXTRA_ACTION", "ACKNOWLEDGE")
+            if (!targetUrl.isBlank()) {
+                putExtra("TARGET_URL", targetUrl)
+            }
+            putExtra("EXTRA_ACTION", if (isAlarm) "ANSWER_CALL" else "ACKNOWLEDGE")
         }
 
         val pendingIntent = PendingIntent.getActivity(
@@ -130,7 +134,7 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Intent to stop continuous alarm
+        // Intent to stop continuous alarm / reject call
         val stopAlarmIntent = Intent(context, AlarmReceiver::class.java).apply {
             action = "com.slanotifier.app.ACTION_STOP_ALARM"
         }
@@ -161,18 +165,37 @@ object NotificationHelper {
         }
 
         if (isAlarm) {
+            val answerIntent = Intent(context, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                if (!targetUrl.isBlank()) {
+                    putExtra("TARGET_URL", targetUrl)
+                }
+                putExtra("EXTRA_ACTION", "ANSWER_CALL")
+            }
+            val answerPendingIntent = PendingIntent.getActivity(
+                context,
+                (taskId + "_answer").hashCode(),
+                answerIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+
+            builder.addAction(
+                android.R.drawable.ic_menu_call,
+                "📞 ANSWER CALL",
+                answerPendingIntent
+            )
             builder.addAction(
                 android.R.drawable.ic_menu_close_clear_cancel,
-                "🔕 STOP ALARM",
+                "🛑 REJECT",
                 stopAlarmPendingIntent
             )
+        } else {
+            builder.addAction(
+                android.R.drawable.ic_menu_view,
+                "👁️ VIEW TASK",
+                pendingIntent
+            )
         }
-
-        builder.addAction(
-            android.R.drawable.ic_menu_view,
-            "👁️ VIEW TASK",
-            pendingIntent
-        )
 
         val notifId = NOTIFICATION_ID_BASE + (Math.abs(taskId.hashCode()) % 1000)
         notificationManager.notify(notifId, builder.build())

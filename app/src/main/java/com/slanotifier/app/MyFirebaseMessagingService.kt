@@ -37,9 +37,10 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         }
 
         val tag = remoteMessage.data["tag"] ?: ("fcm_" + System.currentTimeMillis())
+        val targetUrl = remoteMessage.data["url"] ?: ""
         val isAlarm = (level == "alarm" || title!!.contains("ALARM", ignoreCase = true) || title.contains("CALL", ignoreCase = true))
 
         // Trigger native notification with sound and vibration even when app is OPEN in foreground
-        NotificationHelper.triggerSlaNotification(this, tag, title!!, body!!, isAlarm = isAlarm)
+        NotificationHelper.triggerSlaNotification(this, tag, title!!, body!!, isAlarm = isAlarm, targetUrl = targetUrl)
     }
 }
