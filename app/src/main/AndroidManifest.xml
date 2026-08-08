@@ -50,6 +50,7 @@
             android:exported="false">
             <intent-filter>
                 <action android:name="com.slanotifier.app.ACTION_REPEATING_ALERT" />
+                <action android:name="com.slanotifier.app.ACTION_STOP_ALARM" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
             </intent-filter>
         </receiver>
@@ -63,6 +64,8 @@
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
+        </provider>
+
         <!-- Firebase Messaging Foreground & Background Handler Service -->
         <service
             android:name=".MyFirebaseMessagingService"
