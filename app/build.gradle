@@ -3,7 +3,7 @@ apply plugin: 'kotlin-android'
 apply plugin: 'com.google.gms.google-services'
 
 android {
-    namespace 'com.hoteleshop.app'
+    namespace 'com.slanotifier.app'
     compileSdk 34
 
     defaultConfig {
