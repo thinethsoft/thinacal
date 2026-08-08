@@ -7,8 +7,10 @@ import android.os.Bundle
 import android.webkit.URLUtil
 import android.widget.Button
 import android.widget.EditText
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.google.firebase.messaging.FirebaseMessaging
 
 class UrlSettingsActivity : AppCompatActivity() {
 
@@ -39,11 +41,39 @@ class UrlSettingsActivity : AppCompatActivity() {
         val btnSaveUrl = findViewById<Button>(R.id.btnSaveUrl)
         val btnCancelUrl = findViewById<Button>(R.id.btnCancelUrl)
         val btnTestNotification = findViewById<Button>(R.id.btnTestNotification)
+        val btnFetchFcmToken = findViewById<Button>(R.id.btnFetchFcmToken)
+        val tvFcmTokenDisplay = findViewById<TextView>(R.id.tvFcmTokenDisplay)
         val btnRegisterDeviceDb = findViewById<Button>(R.id.btnRegisterDeviceDb)
 
         val currentUrl = getSavedUrl(this)
         if (!currentUrl.isNullOrBlank()) {
             etUrlInput.setText(currentUrl)
+        }
+
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val existingToken = prefs.getString("fcm_token", null)
+        if (!existingToken.isNullOrBlank()) {
+            tvFcmTokenDisplay.text = "FCM Token:\n$existingToken"
+        }
+
+        btnFetchFcmToken.setOnClickListener {
+            tvFcmTokenDisplay.text = "🔑 Fetching Real FCM Token from Google..."
+            try {
+                FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+                    if (task.isSuccessful && !task.result.isNullOrBlank()) {
+                        val realToken = task.result
+                        prefs.edit().putString("fcm_token", realToken).apply()
+                        tvFcmTokenDisplay.text = "FCM Token:\n$realToken"
+                        Toast.makeText(this, "✅ Real FCM Token Generated!", Toast.LENGTH_SHORT).show()
+                    } else {
+                        tvFcmTokenDisplay.text = "⚠️ Failed: " + (task.exception?.message ?: "Unknown error")
+                        Toast.makeText(this, "Failed to fetch FCM Token", Toast.LENGTH_LONG).show()
+                    }
+                }
+            } catch (e: Exception) {
+                tvFcmTokenDisplay.text = "Error: " + e.message
+                Toast.makeText(this, "Error: " + e.message, Toast.LENGTH_LONG).show()
+            }
         }
 
         btnTestNotification.setOnClickListener {
@@ -61,7 +91,7 @@ class UrlSettingsActivity : AppCompatActivity() {
                 putExtra("REGISTER_DEVICE_DB", true)
             }
             setResult(Activity.RESULT_OK, resultIntent)
-            Toast.makeText(this, "📱 Registering Device Token in Database...", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "📱 Saving FCM Token in Database...", Toast.LENGTH_SHORT).show()
             finish()
         }
 

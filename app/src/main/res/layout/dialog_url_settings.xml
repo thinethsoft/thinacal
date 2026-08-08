@@ -50,6 +50,32 @@
         android:textStyle="bold"
         android:textAllCaps="false" />
 
+    <!-- Fetch & Display FCM Token Button -->
+    <androidx.appcompat.widget.AppCompatButton
+        android:id="@+id/btnFetchFcmToken"
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/bg_input_field"
+        android:text="🔑 Fetch &amp; Display Google FCM Token"
+        android:textColor="#f59e0b"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textAllCaps="false" />
+
+    <TextView
+        android:id="@+id/tvFcmTokenDisplay"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_input_field"
+        android:padding="10dp"
+        android:text="FCM Token: (Click Fetch button above)"
+        android:textColor="@color/text_muted"
+        android:textSize="11sp"
+        android:maxLines="3"
+        android:ellipsize="end" />
+
     <!-- Register Device in Database Button -->
     <androidx.appcompat.widget.AppCompatButton
         android:id="@+id/btnRegisterDeviceDb"
@@ -57,7 +83,7 @@
         android:layout_height="44dp"
         android:layout_marginTop="10dp"
         android:background="@drawable/bg_gradient_button"
-        android:text="📱 Save Device Token in Database"
+        android:text="📱 Save FCM Token to Database"
         android:textColor="@color/text_white"
         android:textSize="13sp"
         android:textStyle="bold"
