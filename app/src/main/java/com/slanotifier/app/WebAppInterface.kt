@@ -6,6 +6,28 @@ import android.widget.Toast
 
 class WebAppInterface(private val context: Context) {
 
+    private val prefs = context.getSharedPreferences("sla_app_settings", Context.MODE_PRIVATE)
+
+    @JavascriptInterface
+    fun getPersistentDeviceUuid(): String {
+        var uuid = prefs.getString("device_uuid", null)
+        if (uuid.isNullOrBlank()) {
+            uuid = "dev_app_" + System.currentTimeMillis() + "_" + (1000..9999).random()
+            prefs.edit().putString("device_uuid", uuid).apply()
+        }
+        return uuid!!
+    }
+
+    @JavascriptInterface
+    fun getPersistentFcmToken(): String {
+        var token = prefs.getString("fcm_token", null)
+        if (token.isNullOrBlank()) {
+            token = "cap_fcm_app_" + System.currentTimeMillis() + "_" + (1000..9999).random()
+            prefs.edit().putString("fcm_token", token).apply()
+        }
+        return token!!
+    }
+
     @JavascriptInterface
     fun triggerAlert(taskId: String, title: String, message: String) {
         val safeId = if (taskId.isBlank()) "task_" + System.currentTimeMillis() else taskId
@@ -30,7 +52,7 @@ class WebAppInterface(private val context: Context) {
 
     @JavascriptInterface
     fun getDeviceToken(): String {
-        return "thinacal_device_" + (Math.abs(context.packageName.hashCode()) + System.currentTimeMillis() % 100000)
+        return getPersistentFcmToken()
     }
 
     @JavascriptInterface

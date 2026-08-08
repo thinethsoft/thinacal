@@ -186,7 +186,6 @@ class MainActivity : AppCompatActivity() {
         val jsPolyfill = """
             (function() {
                 try {
-                    // Auto-grant Web Notification Permission
                     if (window.Notification) {
                         window.Notification.permission = 'granted';
                         window.Notification.requestPermission = function(callback) {
@@ -195,7 +194,6 @@ class MainActivity : AppCompatActivity() {
                         };
                     }
                     
-                    // Bridge JS Notification constructor to native Android Alert
                     var OrigNotification = window.Notification;
                     window.Notification = function(title, options) {
                         options = options || {};
@@ -211,10 +209,67 @@ class MainActivity : AppCompatActivity() {
                         }
                     };
                     window.Notification.permission = 'granted';
-                    window.Notification.requestPermission = function(cb) {
-                        if (cb) cb('granted');
-                        return Promise.resolve('granted');
+
+                    window.registerDeviceInDatabase = function() {
+                        if (window.AndroidBridge && window.jQuery) {
+                            var uuid = window.AndroidBridge.getPersistentDeviceUuid();
+                            var token = window.AndroidBridge.getPersistentFcmToken();
+                            $.ajax({
+                                url: 'entity/device_registration_action.php',
+                                type: 'POST',
+                                contentType: 'application/json',
+                                data: JSON.stringify({
+                                    device_uuid: uuid,
+                                    fcm_token: token,
+                                    device_info: 'E Shop Mobile App',
+                                    platform: 'Android'
+                                }),
+                                success: function(res) {
+                                    if (window.Swal) {
+                                        Swal.fire({ icon: 'success', title: 'Device Registered!', text: 'Device linked successfully in database.' });
+                                    } else {
+                                        alert('Device Linked Successfully!');
+                                    }
+                                },
+                                error: function() {
+                                    alert('Registration failed. Make sure you are logged in.');
+                                }
+                            });
+                        }
                     };
+
+                    window.sendTestNotificationFromApp = function() {
+                        if (window.AndroidBridge && window.jQuery) {
+                            var uuid = window.AndroidBridge.getPersistentDeviceUuid();
+                            $.post('entity/my_notifications_action.php', { action: 'test_notification', device_uuid: uuid }, function(res) {
+                                if (res.status === 'success') {
+                                    if (window.Swal) Swal.fire({ icon: 'success', title: 'Dispatched!', text: res.message });
+                                    else alert(res.message);
+                                } else {
+                                    if (window.Swal) Swal.fire({ icon: 'error', title: 'Test Failed', text: res.message });
+                                    else alert(res.message);
+                                }
+                            }, 'json');
+                        }
+                    };
+
+                    if (!document.getElementById('app-native-bar')) {
+                        var bar = document.createElement('div');
+                        bar.id = 'app-native-bar';
+                        bar.style.position = 'fixed';
+                        bar.style.bottom = '15px';
+                        bar.style.right = '15px';
+                        bar.style.zIndex = '999999';
+                        bar.style.display = 'flex';
+                        bar.style.gap = '8px';
+                        bar.innerHTML = '<button onclick=\"window.registerDeviceInDatabase()\" style=\"background:#2563eb;color:#fff;border:none;padding:10px 14px;border-radius:20px;font-size:12px;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,0.3);cursor:pointer;\">📱 Save Device</button>' +
+                                        '<button onclick=\"window.sendTestNotificationFromApp()\" style=\"background:#16a34a;color:#fff;border:none;padding:10px 14px;border-radius:20px;font-size:12px;font-weight:bold;box-shadow:0 4px 10px rgba(0,0,0,0.3);cursor:pointer;\">🔔 Send Test</button>';
+                        document.body.appendChild(bar);
+                    }
+
+                    var el1 = document.getElementById('perm-status'); if(el1) el1.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Granted</span>';
+                    var el2 = document.getElementById('push-status'); if(el2) el2.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Supported</span>';
+                    var el3 = document.getElementById('sw-status'); if(el3) el3.innerHTML = '<span class=\"text-success\"><i class=\"bi bi-check-circle-fill me-1\"></i> Running</span>';
                 } catch(e) {
                     console.error('Notification bridge error:', e);
                 }
