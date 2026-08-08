@@ -3,103 +3,56 @@ package com.slanotifier.app
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.media.AudioAttributes
+import android.media.Ringtone
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.content.FileProvider
-import java.io.File
-import java.io.FileOutputStream
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 object NotificationHelper {
     private const val CHANNEL_ID = "sla_high_priority_channel"
     private const val CHANNEL_NAME = "Critical SLA Task Alerts"
+    private const val ALARM_CHANNEL_ID = "sla_continuous_alarm_channel"
+    private const val ALARM_CHANNEL_NAME = "Incoming Call Alarm Alerts"
     private const val NOTIFICATION_ID_BASE = 9000
 
-    fun getTinginSoundUri(context: Context): Uri {
-        // Try raw resource first
-        val rawResId = context.resources.getIdentifier("tingin", "raw", context.packageName)
-        if (rawResId != 0) {
-            return Uri.parse("${ContentResolver.SCHEME_ANDROID_RESOURCE}://${context.packageName}/raw/tingin")
-        }
+    private var activeRingtone: Ringtone? = null
 
-        // Fallback: Generate tingin.wav file in app storage dynamically
-        val soundFile = File(context.filesDir, "tingin_tone.wav")
-        if (!soundFile.exists()) {
-            generateTinginWavFile(soundFile)
-        }
+    @Synchronized
+    fun startContinuousRingtone(context: Context) {
+        try {
+            stopContinuousRingtone()
+            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
+                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
 
-        return try {
-            FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", soundFile)
+            activeRingtone = RingtoneManager.getRingtone(context, alarmUri)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                activeRingtone?.isLooping = true
+            }
+            activeRingtone?.play()
+            Log.d("NotificationHelper", "Started continuous ringing call alarm")
         } catch (e: Exception) {
-            Uri.fromFile(soundFile)
+            Log.e("NotificationHelper", "Error playing ringtone", e)
         }
     }
 
-    private fun generateTinginWavFile(outputFile: File) {
+    @Synchronized
+    fun stopContinuousRingtone() {
         try {
-            val sampleRate = 44100
-            val duration1 = 0.15 // 150ms for "Ting" (1760 Hz)
-            val duration2 = 0.35 // 350ms for "In" (2637 Hz)
-
-            val numSamples1 = (sampleRate * duration1).toInt()
-            val numSamples2 = (sampleRate * duration2).toInt()
-            val totalSamples = numSamples1 + numSamples2
-
-            val pcmData = ByteArray(totalSamples * 2)
-            val buffer = ByteBuffer.wrap(pcmData).order(ByteOrder.LITTLE_ENDIAN)
-
-            // Tone 1: 1760 Hz
-            for (i in 0 until numSamples1) {
-                val t = i.toDouble() / sampleRate
-                val decay = Math.exp(-i.toDouble() / (sampleRate * 0.05))
-                val sample = Math.sin(2.0 * Math.PI * 1760.0 * t) * decay * 0.8
-                val val16 = (Math.max(-1.0, Math.min(1.0, sample)) * 32767).toInt().toShort()
-                buffer.putShort(val16)
+            activeRingtone?.let {
+                if (it.isPlaying) {
+                    it.stop()
+                    Log.d("NotificationHelper", "Stopped continuous ringing call alarm")
+                }
             }
-
-            // Tone 2: 2637 Hz
-            for (i in 0 until numSamples2) {
-                val t = i.toDouble() / sampleRate
-                val decay = Math.exp(-i.toDouble() / (sampleRate * 0.12))
-                val sample = Math.sin(2.0 * Math.PI * 2637.0 * t) * decay * 0.9
-                val val16 = (Math.max(-1.0, Math.min(1.0, sample)) * 32767).toInt().toShort()
-                buffer.putShort(val16)
-            }
-
-            val dataSize = pcmData.size
-            val chunkSize = 36 + dataSize
-            val header = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN)
-
-            header.put("RIFF".toByteArray())
-            header.putInt(chunkSize)
-            header.put("WAVE".toByteArray())
-            header.put("fmt ".toByteArray())
-            header.putInt(16) // Subchunk1Size
-            header.putShort(1.toShort()) // PCM
-            header.putShort(1.toShort()) // Mono
-            header.putInt(sampleRate)
-            header.putInt(sampleRate * 2) // ByteRate
-            header.putShort(2.toShort()) // BlockAlign
-            header.putShort(16.toShort()) // BitsPerSample
-            header.put("data".toByteArray())
-            header.putInt(dataSize)
-
-            FileOutputStream(outputFile).use { fos ->
-                fos.write(header.array())
-                fos.write(pcmData)
-            }
-            Log.d("NotificationHelper", "Generated Tingin WAV tone at ${outputFile.absolutePath}")
+            activeRingtone = null
         } catch (e: Exception) {
-            Log.e("NotificationHelper", "Error generating WAV file", e)
+            Log.e("NotificationHelper", "Error stopping ringtone", e)
         }
     }
 
@@ -118,7 +71,7 @@ object NotificationHelper {
                 CHANNEL_NAME,
                 NotificationManager.IMPORTANCE_HIGH
             ).apply {
-                description = "High Priority Channel for SLA Task Notifications with Tingin tone"
+                description = "High Priority Channel for SLA Task Notifications"
                 enableVibration(true)
                 vibrationPattern = longArrayOf(0, 300, 150, 300)
                 setSound(soundUri, audioAttributes)
@@ -126,17 +79,42 @@ object NotificationHelper {
                 enableLights(true)
             }
 
+            val alarmChannel = NotificationChannel(
+                ALARM_CHANNEL_ID,
+                ALARM_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Continuous Ringing Call Alarm Channel for Emergency SLA Tasks"
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 1000, 500, 1000)
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                enableLights(true)
+            }
+
             notificationManager.createNotificationChannel(channel)
-            Log.d("NotificationHelper", "Created SLA Notification Channel with sound $soundUri")
+            notificationManager.createNotificationChannel(alarmChannel)
+            Log.d("NotificationHelper", "Created SLA Notification Channels")
         }
     }
 
-    fun triggerSlaNotification(context: Context, taskId: String, title: String, message: String) {
+    fun triggerSlaNotification(
+        context: Context,
+        taskId: String,
+        title: String,
+        message: String,
+        isAlarm: Boolean = false
+    ) {
         val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         createNotificationChannel(context)
 
         // Wake screen if device is locked/asleep
         wakeUpScreen(context)
+
+        if (isAlarm) {
+            startContinuousRingtone(context)
+        }
+
+        val targetChannel = if (isAlarm) ALARM_CHANNEL_ID else CHANNEL_ID
 
         // Intent when notification is clicked
         val intent = Intent(context, MainActivity::class.java).apply {
@@ -152,17 +130,20 @@ object NotificationHelper {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        // Fullscreen intent for instant wakeup / heads-up alert
-        val fullScreenPendingIntent = PendingIntent.getActivity(
+        // Intent to stop continuous alarm
+        val stopAlarmIntent = Intent(context, AlarmReceiver::class.java).apply {
+            action = "com.slanotifier.app.ACTION_STOP_ALARM"
+        }
+        val stopAlarmPendingIntent = PendingIntent.getBroadcast(
             context,
-            (taskId + "_fs").hashCode(),
-            intent,
+            (taskId + "_stop").hashCode(),
+            stopAlarmIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
         val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, targetChannel)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(message)
@@ -171,19 +152,31 @@ object NotificationHelper {
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setAutoCancel(true)
-            .setSound(soundUri)
-            .setVibrate(longArrayOf(0, 300, 150, 300))
+            .setVibrate(if (isAlarm) longArrayOf(0, 1000, 500, 1000) else longArrayOf(0, 300, 150, 300))
             .setContentIntent(pendingIntent)
-            .setFullScreenIntent(fullScreenPendingIntent, true)
-            .addAction(
-                android.R.drawable.ic_menu_view,
-                "View Task & Acknowledge",
-                pendingIntent
+            .setFullScreenIntent(pendingIntent, true)
+
+        if (!isAlarm) {
+            builder.setSound(soundUri)
+        }
+
+        if (isAlarm) {
+            builder.addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                "🔕 STOP ALARM",
+                stopAlarmPendingIntent
             )
+        }
+
+        builder.addAction(
+            android.R.drawable.ic_menu_view,
+            "👁️ VIEW TASK",
+            pendingIntent
+        )
 
         val notifId = NOTIFICATION_ID_BASE + (Math.abs(taskId.hashCode()) % 1000)
         notificationManager.notify(notifId, builder.build())
-        Log.d("NotificationHelper", "Triggered SLA Notification ID $notifId for task $taskId")
+        Log.d("NotificationHelper", "Triggered SLA Notification ID $notifId for task $taskId (isAlarm: $isAlarm)")
     }
 
     private fun wakeUpScreen(context: Context) {
