@@ -220,16 +220,6 @@ class MainActivity : AppCompatActivity() {
                         if (window.AndroidBridge && window.jQuery) {
                             var uuid = window.AndroidBridge.getPersistentDeviceUuid();
                             var token = window.AndroidBridge.getPersistentFcmToken();
-                            var dummyEndpoint = "https://fcm.googleapis.com/fcm/send/" + token;
-                            var webPushObj = {
-                                endpoint: dummyEndpoint,
-                                subscriptionId: token,
-                                token: token,
-                                keys: {
-                                    p256dh: "BEl62iUYgUivxIkv69yViEuiBIa-Ib9-gZ0g_R_N096a6g_8Xg2g_R_N096a6g_8Xg2g",
-                                    auth: "dGhpbmFjYWxfYXV0aF8xMjM0NTY"
-                                }
-                            };
                             $.ajax({
                                 url: 'entity/device_registration_action.php',
                                 type: 'POST',
@@ -237,15 +227,15 @@ class MainActivity : AppCompatActivity() {
                                 data: JSON.stringify({
                                     device_uuid: uuid,
                                     fcm_token: token,
-                                    webpush_subscription: JSON.stringify(webPushObj),
+                                    webpush_subscription: null,
                                     device_info: 'E Shop Mobile App (Kotlin Native)',
                                     platform: 'Android'
                                 }),
                                 success: function(res) {
                                     if (window.Swal) {
-                                        Swal.fire({ icon: 'success', title: 'Device Registered!', text: 'Device linked successfully in database.' });
+                                        Swal.fire({ icon: 'success', title: 'Device Registered!', text: 'FCM Token saved successfully in database.' });
                                     } else {
-                                        alert('Device Linked Successfully!');
+                                        alert('FCM Token Saved Successfully!');
                                     }
                                 },
                                 error: function() {
