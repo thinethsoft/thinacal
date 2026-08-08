@@ -39,6 +39,7 @@ class UrlSettingsActivity : AppCompatActivity() {
         val btnSaveUrl = findViewById<Button>(R.id.btnSaveUrl)
         val btnCancelUrl = findViewById<Button>(R.id.btnCancelUrl)
         val btnTestNotification = findViewById<Button>(R.id.btnTestNotification)
+        val btnRegisterDeviceDb = findViewById<Button>(R.id.btnRegisterDeviceDb)
 
         val currentUrl = getSavedUrl(this)
         if (!currentUrl.isNullOrBlank()) {
@@ -53,6 +54,15 @@ class UrlSettingsActivity : AppCompatActivity() {
                 "Your E Shop Phone Notification & Ringtone are working 100% perfectly!"
             )
             Toast.makeText(this, "🔔 Test Notification Dispatched!", Toast.LENGTH_SHORT).show()
+        }
+
+        btnRegisterDeviceDb.setOnClickListener {
+            val resultIntent = Intent().apply {
+                putExtra("REGISTER_DEVICE_DB", true)
+            }
+            setResult(Activity.RESULT_OK, resultIntent)
+            Toast.makeText(this, "📱 Registering Device Token in Database...", Toast.LENGTH_SHORT).show()
+            finish()
         }
 
         btnSaveUrl.setOnClickListener {

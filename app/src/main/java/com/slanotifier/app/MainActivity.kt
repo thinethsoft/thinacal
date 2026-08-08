@@ -35,6 +35,12 @@ class MainActivity : AppCompatActivity() {
 
     private val settingsLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
+            val shouldRegisterDb = result.data?.getBooleanExtra("REGISTER_DEVICE_DB", false) ?: false
+            if (shouldRegisterDb) {
+                webView.postDelayed({
+                    webView.evaluateJavascript("if(window.registerDeviceInDatabase) window.registerDeviceInDatabase();", null)
+                }, 300)
+            }
             val updatedUrl = result.data?.getStringExtra("UPDATED_URL")
             if (!updatedUrl.isNullOrBlank()) {
                 loadWebUrl(updatedUrl)
